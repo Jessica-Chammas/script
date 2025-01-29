@@ -53,17 +53,22 @@ async function fetchSizeRecommendationFromLambda(productId) {
 }
 
 // Extracts the store URL dynamically from the current hostname.
-// Returns the extracted URL or null if the hostname format is not recognized.
 function extractStoreUrl() {
-    const hostname = window.location.hostname; // E.g., "prestashop.byrever.com".
-    const match = hostname.match(/^(.*?)\.com/); // Extract everything before ".com".
+    const hostname = window.location.hostname; // E.g., "localhost" or "prestashop.byrever.com"
+    
+    // If it's localhost or 127.0.0.1, handle as local environment
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        return 'localhost'; // Return 'localhost' or any other unique identifier
+    }
+    
+    // For other domains (like prestashop.byrever.com), match everything before ".com"
+    const match = hostname.match(/^(.*?)\.com/);
     const storeUrl = match ? match[0] : null; // Return the matched portion or null.
     console.log("Store URL:", storeUrl); // Log the extracted store URL for debugging.
     return storeUrl;
 }
 
 // Detects the preferred language of the user.
-// Returns the base language code (e.g., 'en' from 'en-US').
 function detectLanguage() {
     const lang = document.documentElement.lang || navigator.language; // Use <html lang> or browser language.
     const baseLang = lang.split("-")[0]; // Extract the base language code.
@@ -174,7 +179,7 @@ function extractProductId() {
 
 // Extracts the product ID from the URL.
 function extractProductIdFromUrl(url) {
-    const regex = /\/(?:product\/|)(\d+)[-\/]/; // Matches patterns like /123-product-name.
+    const regex = /[?&]id_product=(\d+)/; // Matches "id_product=2"
     const match = url.match(regex);
     return match ? match[1] : null;
 }
