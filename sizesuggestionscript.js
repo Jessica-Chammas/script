@@ -16,7 +16,7 @@ async function fetchSizeRecommendationFromLambda(productId) {
 
     // Construct the query parameters for the API request.
     const queryParams = new URLSearchParams({
-        product_id: productId, // (TESTING NOTE: currently hardcoded data will need format " product_id: `prod_${productId}` " change to test)
+        product_id: productId, 
         store_url: storeURL, // Use the extracted store URL.
         language: language, // Add the detected language.
     }).toString();
@@ -56,12 +56,12 @@ async function fetchSizeRecommendationFromLambda(productId) {
 function extractStoreUrl() {
     const hostname = window.location.hostname; // E.g., "localhost" or "prestashop.byrever.com"
     
-    // If it's localhost or 127.0.0.1, handle as local environment
+    // Handle the case for localhost or 127.0.0.1
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
-        return 'localhost'; // Return 'localhost' or any other unique identifier
+        return 'localhost'; // You can return 'localhost' or any other unique identifier for local testing
     }
     
-    // For other domains (like prestashop.byrever.com), match everything before ".com"
+    // For other domains, extract the store URL before ".com"
     const match = hostname.match(/^(.*?)\.com/);
     const storeUrl = match ? match[0] : null; // Return the matched portion or null.
     console.log("Store URL:", storeUrl); // Log the extracted store URL for debugging.
@@ -128,10 +128,6 @@ async function processUrl() {
 }
 
 // Retrieves language-specific messages for size recommendations.
-// Parameters:
-// - language: The detected language code (e.g., 'en', 'es').
-// - suggestion: The size suggestion type ('smaller' or 'larger').
-// Returns an object with the bannerPrefix and suggestionMessage.
 function getLanguageSpecificMessages(language, suggestion) {
     const messages = {
         en: {
@@ -162,46 +158,11 @@ function getLanguageSpecificMessages(language, suggestion) {
     return { bannerPrefix: langMessages.bannerPrefix, suggestionMessage };
 }
 
-// Extracts the product ID using fallback methods.
-function extractProductId() {
-    const productId = extractProductIdFromUrl(window.location.href)
-        || extractProductIdFromHtml()
-        || extractProductIdFromMetaTag();
-
-    if (productId) {
-        console.log("Extracted Product ID:", productId); // Log the product ID.
-        return productId;
-    }
-
-    console.error("Error: Product ID could not be extracted.");
-    return null; // Return null if no product ID is found.
-}
-
 // Extracts the product ID from the URL.
 function extractProductIdFromUrl(url) {
     const regex = /[?&]id_product=(\d+)/; // Matches "id_product=2"
     const match = url.match(regex);
     return match ? match[1] : null;
-}
-
-// Extracts the product ID from hidden input fields in the HTML.
-function extractProductIdFromHtml() {
-    const selectors = [
-        'input[name="id_product"]',
-        'input[id="product_page_product_id"]',
-        '[data-product-id]', // Fallback for custom attributes.
-    ];
-    for (const selector of selectors) {
-        const element = document.querySelector(selector);
-        if (element) return element.value || element.dataset.productId;
-    }
-    return null;
-}
-
-// Extracts the product ID from meta tags.
-function extractProductIdFromMetaTag() {
-    const meta = document.querySelector('meta[name="product-id"], meta[property="og:product:id"]');
-    return meta ? meta.content : null;
 }
 
 // Run the main process to fetch and display the size recommendations.
