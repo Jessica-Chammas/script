@@ -1,195 +1,67 @@
-async function fetchSizeRecommendationFromLambda(productId) {
-  const apiUrl = "https://3o3sepchz3wyufedqsjmeben6e0yemfo.lambda-url.eu-west-3.on.aws/";
-  const storeURL = "prestashop.byrever.com";
-
-  // Set language dynamically
-  const language = detectLanguage();
-
-  const queryParams = new URLSearchParams({
-    product_id: `prod_${productId}`,
-    store_url: storeURL,
-    language: language,
-  }).toString();
-
-  const url = `${apiUrl}?${queryParams}`;
-  console.log("Constructed URL:", url);
-
-  try {
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Rever-Final-Url": "https://api.byrever.com/v1/public/analytics/get_product_size_suggestion",
-      },
-      mode: "cors",
-    });
-
-    if (!response.ok) {
-      console.error("Error response from Lambda:", response.statusText);
-      return null;
-    }
-
-    const result = await response.json();
-    console.log("Parsed JSON response:", result);
-    return result;
-  } catch (error) {
-    console.error("Error calling Lambda:", error);
-    return null;
-  }
-}
-
-function detectLanguage() {
-  // Detect language from <html> or use browser default
-  const htmlLang = document.documentElement.lang || navigator.language;
-  console.log("Detected language:", htmlLang);
-  return htmlLang.split("-")[0]; // Extract base language (e.g., 'en' from 'en-US')
-}
-
-async function processUrl() {
-  const productId = extractProductId();
+document.addEventListener("DOMContentLoaded", function() {
+  // Fetch the product ID from the HTML container
+  const container = document.getElementById("size-recommendation-container");
+  const productId = container?.getAttribute("data-product-id");
 
   if (!productId) {
-    console.error("Product ID not found using available methods.");
+    console.error("Product ID not found.");
     return;
   }
 
-  const language = detectLanguage();
-  const recommendation = await fetchSizeRecommendationFromLambda(productId);
+  // Define the API URL
+  const apiUrl = "https://3o3sepchz3wyufedqsjmeben6e0yemfo.lambda-url.eu-west-3.on.aws/";
 
-  const container = document.getElementById("size-recommendation-container");
-  if (container) {
-    if (recommendation && recommendation.suggestion) {
-      // Normalize the suggestion to lowercase
-      const normalizedSuggestion = recommendation.suggestion.toLowerCase();
-      const { bannerPrefix, suggestionMessage } = getLanguageSpecificMessages(language, normalizedSuggestion);
+  // Use the hostname as the store URL
+  const storeURL = window.location.hostname === "localhost" 
+    ? "prestashop.byrever.com" 
+    : window.location.hostname;
 
-      // Create the recommendation container
-      const recommendationContainer = document.createElement("div");
-      recommendationContainer.style.marginTop = "20px";
-      recommendationContainer.style.fontSize = "0.9em";
-      recommendationContainer.style.color = "#888";
-      recommendationContainer.style.display = "flex";
-      recommendationContainer.style.alignItems = "center";
+  // Detect the user's language
+  const language = navigator.language.split("-")[0];
 
-      // Add the prefix and logo
-      const bannerPrefixContainer = document.createElement("div");
-      bannerPrefixContainer.textContent = bannerPrefix;
-      bannerPrefixContainer.style.marginRight = "8px";
+  // Build the query parameters
+  const queryParams = "product_id=prod_" + productId +
+                      "&store_url=" + encodeURIComponent(storeURL) +
+                      "&language=" + encodeURIComponent(language);
 
-      const logoContainer = document.createElement("a");
-      logoContainer.href = "https://www.itsrever.com/#";
-      logoContainer.target = "_blank";
+  // Build the API request URL using string concatenation
+  const url = apiUrl + "?" + queryParams;
 
-      const logoImage = document.createElement("img");
-      logoImage.src = "https://rever-static-files.s3.eu-west-3.amazonaws.com/logos/Rever-Logotype-Positive.svg";
-      logoImage.alt = "REVER Logo";
-      logoImage.style.height = "20px";
-      logoImage.style.marginRight = "5px";
+  console.log("API Request URL:", url);
 
-      logoContainer.appendChild(logoImage);
-      bannerPrefixContainer.appendChild(logoContainer);
-
-      // Add the suggestion message
-      const messageContainer = document.createElement("div");
-      messageContainer.innerHTML = suggestionMessage;
-      messageContainer.style.marginLeft = "8px";
-
-      recommendationContainer.appendChild(bannerPrefixContainer);
-      recommendationContainer.appendChild(messageContainer);
-
-      container.innerHTML = ""; // Clear any previous content
-      container.appendChild(recommendationContainer);
-    } else {
-      container.innerHTML = "No size recommendation available for this product.";
-    }
-  } else {
-    console.error("Container element not found.");
-  }
-}
-
-function getLanguageSpecificMessages(language, suggestion) {
-  const messages = {
-    en: {
-      bannerPrefix: "Based on previous orders,",
-      tooSmall: "This item sizes smaller than usual. When in doubt, choose a <strong>larger size</strong>.",
-      tooBig: "This item sizes larger than usual. When in doubt, choose a <strong>smaller size</strong>.",
-      trueToSize: "This item runs true to size based on similar orders.",
+  // Fetch the recommendation
+  fetch(url, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Rever-Final-Url": "https://api.byrever.com/v1/public/analytics/get_product_size_suggestion",
     },
-    es: {
-      bannerPrefix: "Basado en pedidos anteriores,",
-      tooSmall: "Este artículo talla más pequeño de lo habitual. En caso de duda, elija una <strong>talla más grande</strong>.",
-      tooBig: "Este artículo talla más grande de lo habitual. En caso de duda, elija una <strong>talla más pequeña</strong>.",
-      trueToSize: "Este artículo tiene un tamaño fiel al habitual según pedidos similares.",
-    },
-    fr: {
-      bannerPrefix: "Basé sur des commandes précédentes,",
-      tooSmall: "Cet article taille plus petit que d'habitude. En cas de doute, choisissez une <strong>taille supérieure</strong>.",
-      tooBig: "Cet article taille plus grand que d'habitude. En cas de doute, choisissez une <strong>taille inférieure</strong>.",
-      trueToSize: "Cet article taille comme prévu selon les commandes similaires.",
-    },
-    // Add additional languages here...
-  };
+  })
+    .then(response => {
+      if (!response.ok) {
+        console.error("API Error:", response.status, response.statusText);
+        return null;
+      }
+      return response.json();
+    })
+    .then(result => {
+      console.log("API Response:", result);
 
-  const langMessages = messages[language] || messages["en"]; // Default to English if language not found
-  const suggestionMessage =
-    suggestion === "smaller"
-      ? langMessages.tooSmall
-      : suggestion === "larger"
-      ? langMessages.tooBig
-      : langMessages.trueToSize;
-
-  return {
-    bannerPrefix: langMessages.bannerPrefix,
-    suggestionMessage,
-  };
-}
-
-// Function to extract the product ID using various methods
-function extractProductId() {
-  console.log("Extracting Product ID...");
-
-  const productIdFromUrl = extractProductIdFromUrl(window.location.href);
-  if (productIdFromUrl) {
-    console.log("Product ID extracted from URL:", productIdFromUrl);
-    return productIdFromUrl;
-  }
-
-  const productIdFromHtml = extractProductIdFromHtml();
-  if (productIdFromHtml) {
-    console.log("Product ID extracted from HTML:", productIdFromHtml);
-    return productIdFromHtml;
-  }
-
-  const productIdFromMeta = extractProductIdFromMetaTag();
-  if (productIdFromMeta) {
-    console.log("Product ID extracted from Meta Tag:", productIdFromMeta);
-    return productIdFromMeta;
-  }
-
-  console.error("Failed to extract Product ID.");
-  return null;
-}
-
-// Function to extract the product ID from the URL
-function extractProductIdFromUrl(url) {
-  const regex = /\/(\d+)-/;
-  const match = url.match(regex);
-  return match ? match[1] : null;
-}
-
-// Function to extract the product ID from the HTML DOM
-function extractProductIdFromHtml() {
-  console.log("Extracting Product ID from HTML DOM...");
-  const hiddenInput = document.querySelector('input[name="id_product"], input[id="product_page_product_id"]');
-  return hiddenInput ? hiddenInput.value : null;
-}
-
-// Function to extract the product ID from meta tags
-function extractProductIdFromMetaTag() {
-  console.log("Extracting Product ID from Meta Tags...");
-  const metaTag = document.querySelector('meta[name="product-id"], meta[property="og:product:id"]');
-  return metaTag ? metaTag.content : null;
-}
-
-// Run the script
-processUrl();
+      // Display the size recommendation
+      const recommendation = result && result.suggestion_copy ? result.suggestion_copy : "No recommendation available.";
+      container.innerHTML = "<div class='recommendation-message' style='margin-top: 10px; display: flex; align-items: center;'>"
+        + "<div style='width: 50px; height: 50px; margin-right: 10px; flex-shrink: 0;'>"
+        + "<img src='https://media.licdn.com/dms/image/v2/D4D0BAQGrGdArwEeEiw/company-logo_200_200/company-logo_200_200/0/1710869413593/itsrever_logo?e=2147483647&v=beta&t=xn2DNOVVAhe5KoH72zzkBrvrqCMyTIXlt_zP8BH9OHE' alt='ItsRever Logo' style='height: 40px; width: 40px; border-radius: 50%; vertical-align: middle;'>"
+        + "</div><div style='flex-grow: 1; display: flex; flex-direction: column;'>"
+        + "<div class='banner-prefix' style='font-weight: bold; color: black;'>Based on previous orders, "
+        + "<a href='https://www.itsrever.com/#' target='_blank' style='text-decoration: none;'>"
+        + "<img src='https://rever-static-files.s3.eu-west-3.amazonaws.com/logos/Rever-Logotype-Positive.svg' alt='REVER Logo' style='height: 20px; margin-right: 2px;'>"
+        + "<span style='color: black; font-weight: normal;'><strong>suggests</strong>:</span></a></div>"
+        + "<div style='background-color: #f0f0f0; padding: 5px 8px; border-radius: 8px; margin-top: 5px; max-width: 95%;'>"
+        + "<p style='font-size: 0.9em; color: #000; margin: 0;'>" + recommendation + "</p>"
+        + "</div></div></div>";
+    })
+    .catch(error => {
+      console.error("Fetch Error:", error);
+    });
+});
