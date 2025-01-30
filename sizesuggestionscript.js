@@ -13,11 +13,8 @@ document.addEventListener("DOMContentLoaded", function() {
     return;
   }
 
-  // Set store URL with a fallback for localhost or production
-  let storeURL = window.location.hostname;
-  if (window.location.hostname === "localhost") {
-    storeURL = "prestashop.byrever.com"; // Change this to your actual production domain
-  }
+  // Hardcode the store URL here
+  const storeURL = "prestashop.byrever.com";  // Replace this with your actual store's URL
 
   console.log("Store URL:", storeURL);
 
