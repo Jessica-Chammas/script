@@ -13,10 +13,8 @@ document.addEventListener("DOMContentLoaded", function() {
     return;
   }
 
-  // Explicitly set the store URL for testing or production
+  // Set store URL with a fallback for localhost or production
   let storeURL = window.location.hostname;
-
-  // If you know the exact URL for production (e.g., your live store), you can manually define it.
   if (window.location.hostname === "localhost") {
     storeURL = "prestashop.byrever.com"; // Change this to your actual production domain
   }
@@ -24,7 +22,6 @@ document.addEventListener("DOMContentLoaded", function() {
   console.log("Store URL:", storeURL);
 
   const language = navigator.language.split("-")[0];
-
   const queryParams = "product_id=prod_" + productId +
                       "&store_url=" + encodeURIComponent(storeURL) +
                       "&language=" + encodeURIComponent(language);
