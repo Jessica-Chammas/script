@@ -1,6 +1,11 @@
 document.addEventListener("DOMContentLoaded", function() {
-  // Fetch the product ID from the HTML container
   const container = document.getElementById("size-recommendation-container");
+  
+  if (!container) {
+    console.error("Recommendation container not found.");
+    return;
+  }
+
   const productId = container?.getAttribute("data-product-id");
 
   if (!productId) {
@@ -8,28 +13,27 @@ document.addEventListener("DOMContentLoaded", function() {
     return;
   }
 
-  // Define the API URL
-  const apiUrl = "https://3o3sepchz3wyufedqsjmeben6e0yemfo.lambda-url.eu-west-3.on.aws/";
+  // Explicitly set the store URL for testing or production
+  let storeURL = window.location.hostname;
 
-  // Use the hostname as the store URL
-  const storeURL = window.location.hostname === "localhost" 
-    ? "prestashop.byrever.com" 
-    : window.location.hostname;
+  // If you know the exact URL for production (e.g., your live store), you can manually define it.
+  if (window.location.hostname === "localhost") {
+    storeURL = "prestashop.byrever.com"; // Change this to your actual production domain
+  }
 
-  // Detect the user's language
+  console.log("Store URL:", storeURL);
+
   const language = navigator.language.split("-")[0];
 
-  // Build the query parameters
   const queryParams = "product_id=prod_" + productId +
                       "&store_url=" + encodeURIComponent(storeURL) +
                       "&language=" + encodeURIComponent(language);
 
-  // Build the API request URL using string concatenation
+  const apiUrl = "https://3o3sepchz3wyufedqsjmeben6e0yemfo.lambda-url.eu-west-3.on.aws/";
   const url = apiUrl + "?" + queryParams;
 
   console.log("API Request URL:", url);
 
-  // Fetch the recommendation
   fetch(url, {
     method: "GET",
     headers: {
@@ -47,7 +51,6 @@ document.addEventListener("DOMContentLoaded", function() {
     .then(result => {
       console.log("API Response:", result);
 
-      // Display the size recommendation
       const recommendation = result && result.suggestion_copy ? result.suggestion_copy : "No recommendation available.";
       container.innerHTML = "<div class='recommendation-message' style='margin-top: 10px; display: flex; align-items: center;'>"
         + "<div style='width: 50px; height: 50px; margin-right: 10px; flex-shrink: 0;'>"
